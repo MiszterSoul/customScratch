@@ -358,12 +358,19 @@ newSessionBtn.addEventListener('click', () => {
   })
   .then(res => res.json())
   .then(data => {
-    codeP.textContent = data.couponCode;
-    couponDiv.style.visibility = 'visible';
-    canvas.style.display = 'none';
-    particleCanvas.style.display = 'none';
-    hasRequestedCoupon = true;
-    // Optionally play a sound or show a message
+    // Reset UI: refoil the card, hide coupon, show scratch area
+    codeP.textContent = '';
+    couponDiv.style.visibility = 'hidden';
+    canvas.style.display = '';
+    particleCanvas.style.display = '';
+    hasRequestedCoupon = false;
+    // Repaint the scratch foil
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.fillStyle = SCRATCH_COLOR;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.globalCompositeOperation = 'destination-out';
+    // Optionally reset particles
+    particles.length = 0;
   });
 });
 
