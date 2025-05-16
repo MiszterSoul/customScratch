@@ -31,7 +31,10 @@ body {
   justify-content: center;
   position: relative;
   z-index: 1;
-  overflow: hidden;
+  border-radius: 28px;
+  background: #fff;
+  padding: 32px 12px 24px 12px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.10);
 }
 
 .scratch-area {
@@ -42,7 +45,7 @@ body {
   aspect-ratio: 1 / 1;
   position: relative;
   background: #f1f5f9;
-  border-radius: 16px;
+  border-radius: 22px;
   box-shadow: 0 2px 12px rgba(0,0,0,0.10);
   margin-bottom: 18px;
   display: flex;
@@ -148,6 +151,7 @@ canvas[style*='z-index: 3'] {
     margin: 2vw auto;
     padding: 2vw 1vw;
     box-sizing: border-box;
+    border-radius: 18px;
   }
   .scratch-area {
     width: 90vw;

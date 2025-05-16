@@ -49,6 +49,24 @@ function randomizeColors() {
   SCRATCH_BG = `hsl(${hue}, 60%, 96%)`;
   PARTICLE_HUE = hue;
   BTN_GRAD = `linear-gradient(135deg, hsl(${hue},90%,70%) 60%, hsl(${hue2},90%,55%) 100%)`;
+
+  // Randomize border radius mode/type
+  const radiusModes = [
+    '28px', // default
+    '0px 32px 32px 0px', // right round
+    '32px 0px 32px 0px', // diagonal
+    '32px 32px 0px 0px', // top round
+    '0px 0px 32px 32px', // bottom round
+    '50%', // pill/oval
+    '18px 38px 18px 38px', // wavy
+    '32px 8px 32px 8px', // alternate
+  ];
+  const card = document.querySelector('.scratch-card');
+  const area = document.querySelector('.scratch-area');
+  const r = radiusModes[Math.floor(Math.random()*radiusModes.length)];
+  card.style.borderRadius = r;
+  area.style.borderRadius = r;
+
   applyCardColors();
   resizeScratchCanvases();
 }
@@ -84,6 +102,55 @@ ctx.globalCompositeOperation = 'destination-out';
 // --- Sound effect setup ---
 const scratchSound = new Audio('https://cdn.pixabay.com/audio/2022/07/26/audio_124bfae6e2.mp3'); // Ingyenes kaparó hang
 scratchSound.loop = true;
+
+// --- Synthesized scratch sound using Web Audio API ---
+let scratchAudioCtx = null;
+let scratchNoiseSource = null;
+let scratchGain = null;
+
+function startSynthScratchSound() {
+  if (!window.AudioContext && !window.webkitAudioContext) return;
+  if (scratchAudioCtx == null) {
+    scratchAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  if (scratchNoiseSource) return; // already playing
+  const ctx = scratchAudioCtx;
+  // Create white noise buffer
+  const bufferSize = ctx.sampleRate * 0.5; // 0.5s buffer
+  const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < bufferSize; i++) {
+    data[i] = (Math.random() * 2 - 1) * 0.5;
+  }
+  // Create buffer source
+  scratchNoiseSource = ctx.createBufferSource();
+  scratchNoiseSource.buffer = buffer;
+  scratchNoiseSource.loop = true;
+  // Filter for scratchy effect
+  const filter = ctx.createBiquadFilter();
+  filter.type = 'highpass';
+  filter.frequency.value = 800;
+  // Gain for volume control
+  scratchGain = ctx.createGain();
+  scratchGain.gain.value = 0.18;
+  // Connect nodes
+  scratchNoiseSource.connect(filter);
+  filter.connect(scratchGain);
+  scratchGain.connect(ctx.destination);
+  scratchNoiseSource.start();
+}
+
+function stopSynthScratchSound() {
+  if (scratchNoiseSource) {
+    scratchNoiseSource.stop();
+    scratchNoiseSource.disconnect();
+    scratchNoiseSource = null;
+  }
+  if (scratchGain) {
+    scratchGain.disconnect();
+    scratchGain = null;
+  }
+}
 
 // --- Particle system ---
 const particles = [];
@@ -180,14 +247,13 @@ function startScratch(e) {
     hasRequestedCoupon = true;
     fetchCoupon();
   }
-  scratchSound.currentTime = 0;
-  scratchSound.play();
+  startSynthScratchSound();
   scratch(e);
 }
 
 function endScratch() {
   isDrawing = false;
-  scratchSound.pause();
+  stopSynthScratchSound();
   checkScratchPercent();
 }
 
