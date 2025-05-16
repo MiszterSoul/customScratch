@@ -222,7 +222,7 @@ window.addEventListener('DOMContentLoaded', () => {
     });
   // Create "Scratch All" button
   const scratchAllBtn = document.createElement('button');
-  scratchAllBtn.textContent = 'Mindent megkapar';
+  scratchAllBtn.textContent = 'Mindet kapard le';
   scratchAllBtn.id = 'scratch-all-btn';
   scratchAllBtn.style.marginTop = '12px';
   scratchAllBtn.style.padding = '8px 16px';
@@ -350,8 +350,21 @@ newSessionBtn.style.boxShadow = '0 2px 8px rgba(0,0,0,0.10)';
 newSessionBtn.style.cursor = 'pointer';
 document.body.appendChild(newSessionBtn);
 newSessionBtn.addEventListener('click', () => {
-  document.cookie = 'sessionId=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-  window.location.reload();
+  fetch('/api/coupon', {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ newCoupon: true })
+  })
+  .then(res => res.json())
+  .then(data => {
+    codeP.textContent = data.couponCode;
+    couponDiv.style.visibility = 'visible';
+    canvas.style.display = 'none';
+    particleCanvas.style.display = 'none';
+    hasRequestedCoupon = true;
+    // Optionally play a sound or show a message
+  });
 });
 
 // Add button to randomize colors
@@ -374,7 +387,7 @@ colorBtn.addEventListener('click', randomizeColors);
 
 // --- COPY TO CLIPBOARD & TOOLTIP ---
 const couponCopyInfo = document.createElement('div');
-couponCopyInfo.textContent = 'Kupon kimásolva!';
+couponCopyInfo.textContent = 'Kupon kód kimásolva!';
 couponCopyInfo.style.position = 'absolute';
 couponCopyInfo.style.top = '50%';
 couponCopyInfo.style.left = '50%';
@@ -400,7 +413,7 @@ couponDiv.addEventListener('click', function(e) {
 
 // Add small text under coupon
 let smallCopyText = document.createElement('div');
-smallCopyText.textContent = 'Kattints a kuponra a másoláshoz!';
+smallCopyText.textContent = 'Kattints a kuponkódra a másoláshoz!';
 smallCopyText.style.fontSize = '0.85rem';
 smallCopyText.style.color = '#888';
 smallCopyText.style.marginTop = '8px';

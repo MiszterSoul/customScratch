@@ -2,10 +2,6 @@ import cookie from 'cookie';
 import generateCoupon from '../src/couponGenerator';
 
 export default function handler(req, res) {
-  if (req.method !== 'POST') {
-    res.status(405).json({ error: 'Method not allowed' });
-    return;
-  }
   let cookies = {};
   if (req.headers.cookie) {
     cookies = cookie.parse(req.headers.cookie);
@@ -13,10 +9,21 @@ export default function handler(req, res) {
   let sessionId = cookies.sessionId || Math.random().toString(36).substr(2, 16);
   let couponCode = cookies.couponCode || null;
   let generated = false;
-  if (!couponCode) {
+
+  // If user requests a new coupon, always generate a new code
+  if (req.method === 'POST' && req.body && req.body.newCoupon) {
     couponCode = generateCoupon();
     generated = true;
+  } else if (req.method === 'POST') {
+    if (!couponCode) {
+      couponCode = generateCoupon();
+      generated = true;
+    }
+  } else {
+    res.status(405).json({ error: 'Method not allowed' });
+    return;
   }
+
   // Set/refresh cookies
   res.setHeader('Set-Cookie', [
     cookie.serialize('sessionId', sessionId, {
