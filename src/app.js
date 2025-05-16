@@ -6,7 +6,7 @@ const cookieParser = require('cookie-parser');
 const { saveSession, retrieveSession } = require('./db/localDatabase');
 const generateCoupon = require('./couponGenerator');
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8080;
 
 app.use(bodyParser.json());
 app.use(cookieParser());
