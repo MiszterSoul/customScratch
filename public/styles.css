@@ -1,0 +1,114 @@
+body {
+  font-family: 'Segoe UI', 'Roboto', Arial, sans-serif;
+  background: linear-gradient(135deg, #e0e7ff 0%, #f8fafc 100%);
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 0;
+}
+
+.scratch-card {
+  width: 100%;
+  max-width: 380px;
+  min-height: 420px;
+  background: linear-gradient(135deg, #fff 60%, #e0e7ff 100%);
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px 0 0 0;
+  position: relative;
+  overflow: visible;
+}
+
+.scratch-area {
+  width: 100%;
+  height: 100%;
+  max-width: 360px;
+  max-height: 360px;
+  aspect-ratio: 1 / 1;
+  position: relative;
+  background: #f1f5f9;
+  border-radius: 16px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.10);
+  margin-bottom: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background-image:
+    linear-gradient(120deg, rgba(255,255,255,0.7) 0 10%, transparent 40% 100%),
+    linear-gradient(90deg, #f1f5f9 60%, #e0e7ef 100%);
+  padding: 0;
+}
+
+/* Matt scratch filter effect for canvas overlay */
+canvas[style*='z-index: 2'],
+canvas[style*='z-index: 3'] {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100%;
+  max-height: 100%;
+  min-width: 0;
+  min-height: 0;
+  aspect-ratio: 1 / 1;
+  display: block;
+  filter: brightness(0.95) grayscale(0.2) contrast(1.1);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.scratch-instruction {
+  width: 100%;
+  text-align: center;
+  color: #64748b;
+  font-size: 1.1rem;
+  margin: 18px 0 0 0;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+}
+
+.coupon-code {
+  position: absolute;
+  top: 0; left: 0; width: 100%; height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+  background: transparent;
+  pointer-events: none;
+  visibility: hidden;
+}
+
+.coupon-code .pre-coupon {
+  color: #0ea5e9;
+  font-size: 1.2rem;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+.coupon-code .coupon-value {
+  color: #1a8917;
+  font-size: 2.1rem;
+  font-family: 'Fira Mono', 'Consolas', monospace;
+  font-weight: bold;
+  margin: 0 0 8px 0;
+  letter-spacing: 2px;
+}
+.coupon-code .post-coupon {
+  color: #64748b;
+  font-size: 1rem;
+  margin-top: 0;
+}
+
+@media (max-width: 400px) {
+  .scratch-card {
+    max-width: 98vw;
+    padding: 8px 0 0 0;
+  }
+  .scratch-area {
+    max-width: 98vw;
+    padding: 4px;
+  }
+}
