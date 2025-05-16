@@ -445,37 +445,18 @@ function resizeScratchCanvases() {
 resizeScratchCanvases();
 window.addEventListener('resize', resizeScratchCanvases);
 
-// --- Place color and new coupon buttons in a mobile stack if on mobile ---
-function isMobile() {
-  return window.innerWidth <= 600;
-}
-function updateButtonLayout() {
+// --- Place color and new coupon buttons in a fixed button group at the bottom ---
+function setupBottomButtonGroup() {
   const colorBtn = document.querySelector('button[style*="Színek véletlenszerűsítése"]') || colorBtn;
   const newSessionBtn = document.querySelector('button[style*="Új kupon igénylése"]') || newSessionBtn;
-  if (isMobile()) {
-    let stack = document.querySelector('.mobile-btn-stack');
-    if (!stack) {
-      stack = document.createElement('div');
-      stack.className = 'mobile-btn-stack';
-      document.body.appendChild(stack);
-    }
-    stack.appendChild(newSessionBtn);
-    stack.appendChild(colorBtn);
-  } else {
-    // Restore to fixed positions for desktop
-    newSessionBtn.style.position = 'fixed';
-    newSessionBtn.style.bottom = '24px';
-    newSessionBtn.style.right = '24px';
-    colorBtn.style.position = 'fixed';
-    colorBtn.style.bottom = '24px';
-    colorBtn.style.left = '24px';
-    if (newSessionBtn.parentElement.classList.contains('mobile-btn-stack'))
-      document.body.appendChild(newSessionBtn);
-    if (colorBtn.parentElement.classList.contains('mobile-btn-stack'))
-      document.body.appendChild(colorBtn);
-    let stack = document.querySelector('.mobile-btn-stack');
-    if (stack) stack.remove();
+  let group = document.querySelector('.bottom-btn-group');
+  if (!group) {
+    group = document.createElement('div');
+    group.className = 'bottom-btn-group';
+    document.body.appendChild(group);
   }
+  group.appendChild(newSessionBtn);
+  group.appendChild(colorBtn);
 }
-window.addEventListener('resize', updateButtonLayout);
-window.addEventListener('DOMContentLoaded', updateButtonLayout);
+window.addEventListener('DOMContentLoaded', setupBottomButtonGroup);
+window.addEventListener('resize', setupBottomButtonGroup);
