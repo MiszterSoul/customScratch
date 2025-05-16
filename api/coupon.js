@@ -10,11 +10,31 @@ export default function handler(req, res) {
   let couponCode = cookies.couponCode || null;
   let generated = false;
 
-  // If user requests a new coupon, always generate a new code
+  // If user requests a new coupon, clear coupon and give new sessionId (user must scratch to get new coupon)
   if (req.method === 'POST' && req.body && req.body.newCoupon) {
-    couponCode = generateCoupon();
-    generated = true;
-  } else if (req.method === 'POST') {
+    sessionId = Math.random().toString(36).substr(2, 16);
+    couponCode = null;
+    // Set/refresh cookies (no coupon yet)
+    res.setHeader('Set-Cookie', [
+      cookie.serialize('sessionId', sessionId, {
+        httpOnly: false,
+        sameSite: 'lax',
+        maxAge: 60 * 60 * 24 * 30,
+        path: '/',
+      }),
+      cookie.serialize('couponCode', '', {
+        httpOnly: false,
+        sameSite: 'lax',
+        maxAge: 0,
+        path: '/',
+      })
+    ]);
+    res.status(200).json({ sessionId, couponCode: null, generated: false });
+    return;
+  }
+
+  // Only generate coupon if not present and user is scratching (normal POST)
+  if (req.method === 'POST') {
     if (!couponCode) {
       couponCode = generateCoupon();
       generated = true;
@@ -32,10 +52,10 @@ export default function handler(req, res) {
       maxAge: 60 * 60 * 24 * 30,
       path: '/',
     }),
-    cookie.serialize('couponCode', couponCode, {
+    cookie.serialize('couponCode', couponCode || '', {
       httpOnly: false,
       sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 30,
+      maxAge: couponCode ? 60 * 60 * 24 * 30 : 0,
       path: '/',
     })
   ]);
