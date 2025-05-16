@@ -88,7 +88,10 @@ scratchSound.loop = true;
 // --- Particle system ---
 const particles = [];
 function spawnParticles(x, y) {
-  for (let i = 0; i < CONFIG.particlesPerScratch; i++) {
+  // Reduce particle count on mobile for less movement
+  const isMobile = window.innerWidth <= 600;
+  const particlesPerScratch = isMobile ? Math.max(2, Math.floor(CONFIG.particlesPerScratch / 3)) : CONFIG.particlesPerScratch;
+  for (let i = 0; i < particlesPerScratch; i++) {
     const angle = Math.random() * Math.PI * 2;
     const speed = Math.random() * (CONFIG.particleSpeed.max - CONFIG.particleSpeed.min) + CONFIG.particleSpeed.min;
     particles.push({
@@ -294,7 +297,9 @@ canvas.addEventListener('mousedown', function(e) {
   });
 });
 
+// Prevent scrolling and address mobile browser bar hiding on scratch
 canvas.addEventListener('touchstart', function(e) {
+  e.preventDefault(); // Prevent scroll and bar hiding
   startScratch(e);
   if (!hasRequestedCoupon) {
     hasRequestedCoupon = true;
@@ -307,6 +312,16 @@ canvas.addEventListener('touchstart', function(e) {
     window.removeEventListener('touchend', touchEndHandler);
   });
 }, { passive: false });
+
+// Prevent scrolling on touchmove (redundant but ensures no scroll)
+canvas.addEventListener('touchmove', function(e) { e.preventDefault(); }, { passive: false });
+
+// On mobile, try to lock scroll position when scratching
+function lockScroll() {
+  window.scrollTo(0, 0);
+}
+canvas.addEventListener('touchstart', lockScroll);
+canvas.addEventListener('touchmove', lockScroll);
 
 // Prevent scrolling on touch
 canvas.addEventListener('touchmove', function(e) { e.preventDefault(); }, { passive: false });
