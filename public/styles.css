@@ -64,7 +64,7 @@ canvas[style*='z-index: 3'] {
   text-align: center;
   color: #64748b;
   font-size: 1.1rem;
-  margin: 18px 0 0 0;
+  margin: 18px;
   font-weight: 500;
   letter-spacing: 0.5px;
 }
@@ -78,7 +78,7 @@ canvas[style*='z-index: 3'] {
   justify-content: center;
   z-index: 1;
   background: transparent;
-  pointer-events: none;
+  pointer-events: auto; /* allow click for copy */
   visibility: hidden;
 }
 
@@ -95,11 +95,15 @@ canvas[style*='z-index: 3'] {
   font-weight: bold;
   margin: 0 0 8px 0;
   letter-spacing: 2px;
+  cursor: pointer;
+  pointer-events: auto;
 }
 .coupon-code .post-coupon {
   color: #64748b;
   font-size: 1rem;
   margin-top: 0;
+  padding: 18px;
+  text-align: center;
 }
 
 @media (max-width: 400px) {

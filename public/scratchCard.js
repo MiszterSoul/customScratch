@@ -1,3 +1,12 @@
+// Configuration variables for scratch effect
+const CONFIG = {
+  particlesPerScratch: 8,            // number of particles on individual scratch
+  fullRevealMaxClusters: 20,         // max clusters in full reveal
+  fullRevealGridStep: 15,            // grid size for sampling full reveal
+  particleSize: { min: 2, max: 6 },  // particle size range in px
+  particleSpeed: { min: 1.5, max: 3.5 }, // particle speed range
+};
+
 // Canvas-based scratch card logic for frontend
 // This script should be included in public/index.html
 
@@ -7,13 +16,14 @@ const codeP = document.getElementById('code');
 
 let isDrawing = false;
 let hasRequestedCoupon = false;
-let sessionId = localStorage.getItem('scratch_session_id') || null;
+let sessionId = null;
 
 // --- COLOR VARIABLES ---
 let CARD_BG_GRAD = 'linear-gradient(135deg, #fff 60%, #e0e7ff 100%)';
 let CARD_SHINE = 'linear-gradient(120deg, rgba(255,255,255,0.7) 0 10%, transparent 40% 100%)';
 let CARD_SHADOW = '0 8px 32px rgba(0,0,0,0.18)';
 let SCRATCH_COLOR = '#888';
+let SCRATCH_BG = '#f1f5f9';
 let PARTICLE_HUE = 45; // gold
 let PARTICLE_SAT = 30;
 let PARTICLE_LUM = 60;
@@ -22,7 +32,8 @@ let BTN_GRAD = 'linear-gradient(135deg, #38bdf8 60%, #2563eb 100%)';
 function applyCardColors() {
   document.querySelector('.scratch-card').style.background = CARD_BG_GRAD;
   document.querySelector('.scratch-card').style.boxShadow = CARD_SHADOW;
-  document.querySelector('.scratch-area').style.backgroundImage = CARD_SHINE + ', linear-gradient(90deg, #f1f5f9 60%, #e0e7ef 100%)';
+  document.querySelector('.scratch-area').style.background = SCRATCH_BG;
+  document.querySelector('.scratch-area').style.backgroundImage = CARD_SHINE + ', linear-gradient(90deg, ' + SCRATCH_BG + ' 60%, #e0e7ef 100%)';
   canvas.getContext('2d').fillStyle = SCRATCH_COLOR;
   document.querySelectorAll('button').forEach(btn => btn.style.background = BTN_GRAD);
 }
@@ -35,6 +46,7 @@ function randomizeColors() {
   CARD_SHINE = `linear-gradient(120deg, rgba(255,255,255,0.7) 0 10%, transparent 40% 100%)`;
   CARD_SHADOW = `0 8px 32px hsla(${hue},60%,40%,0.18)`;
   SCRATCH_COLOR = `hsl(${hue2},10%,40%)`;
+  SCRATCH_BG = `hsl(${hue}, 60%, 96%)`;
   PARTICLE_HUE = hue;
   BTN_GRAD = `linear-gradient(135deg, hsl(${hue},90%,70%) 60%, hsl(${hue2},90%,55%) 100%)`;
   applyCardColors();
@@ -76,17 +88,17 @@ scratchSound.loop = true;
 // --- Particle system ---
 const particles = [];
 function spawnParticles(x, y) {
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < CONFIG.particlesPerScratch; i++) {
     const angle = Math.random() * Math.PI * 2;
-    const speed = Math.random() * 2 + 1.5;
+    const speed = Math.random() * (CONFIG.particleSpeed.max - CONFIG.particleSpeed.min) + CONFIG.particleSpeed.min;
     particles.push({
       x,
       y,
       vx: Math.cos(angle) * speed,
       vy: Math.sin(angle) * speed - 2,
       alpha: 1,
-      size: Math.random() * 4 + 2,
-      color: `hsl(${PARTICLE_HUE}, ${PARTICLE_SAT}%, ${Math.random()*20+PARTICLE_LUM}%)`,
+      size: Math.random() * (CONFIG.particleSize.max - CONFIG.particleSize.min) + CONFIG.particleSize.min,
+      color: `hsl(${PARTICLE_HUE}, ${PARTICLE_SAT}%, ${Math.random() * 20 + PARTICLE_LUM}%)`,
       z: Math.random() * 8 + 2,
       tilt: Math.random() * Math.PI * 2,
       tiltSpeed: (Math.random() - 0.5) * 0.2
@@ -145,12 +157,18 @@ function getPointerPos(e) {
 function scratch(e) {
   if (!isDrawing) return;
   const pos = getPointerPos(e);
+  // Only spawn particles if area was not already cleared
+  const pixelData = ctx.getImageData(pos.x, pos.y, 1, 1).data;
+  const wasOpaque = pixelData[3] > 0;
+  // Clear the area
   ctx.save();
   ctx.beginPath();
   ctx.arc(pos.x, pos.y, 18, 0, 2 * Math.PI);
   ctx.fill();
   ctx.restore();
-  spawnParticles(pos.x, pos.y);
+  if (wasOpaque) {
+    spawnParticles(pos.x, pos.y);
+  }
 }
 
 function startScratch(e) {
@@ -173,56 +191,92 @@ function endScratch() {
 function fetchCoupon() {
   fetch('/api/coupon', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(sessionId ? { 'x-session-id': sessionId } : {})
-    }
+    credentials: 'include', // include cookies for session
+    headers: { 'Content-Type': 'application/json' }
   })
-    .then(res => res.json())
-    .then(data => {
-      sessionId = data.sessionId;
-      localStorage.setItem('scratch_session_id', sessionId);
-      codeP.textContent = data.couponCode;
-      couponDiv.style.visibility = 'visible';
-      // Ha generált kód, játsszunk le másik hangot
-      if (data.generated) {
-        const genSound = new Audio('https://cdn.pixabay.com/audio/2022/07/26/audio_124bfae6e2.mp3'); // Cseréld ki, ha másik hang kell
-        genSound.play();
-      }
-    });
+  .then(res => res.json())
+  .then(data => {
+    codeP.textContent = data.couponCode;
+    couponDiv.style.visibility = 'visible';
+    if (data.generated) {
+      const genSound = new Audio('https://cdn.pixabay.com/audio/2022/07/26/audio_124bfae6e2.mp3');
+      genSound.play();
+    }
+  });
 }
 
-// On load, check for session and coupon
+// --- Get existing session coupon on load ---
 window.addEventListener('DOMContentLoaded', () => {
   applyCardColors();
-  if (sessionId) {
-    fetch('/api/coupon', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-session-id': sessionId
-      }
-    })
-      .then(res => res.json())
-      .then(data => {
-        sessionId = data.sessionId;
-        localStorage.setItem('scratch_session_id', sessionId);
+  // Check existing session
+  fetch('/api/session', { credentials: 'include' })
+    .then(res => res.json())
+    .then(data => {
+      if (data.couponCode) {
         codeP.textContent = data.couponCode;
+        canvas.style.display = 'none';
+        particleCanvas.style.display = 'none';
         couponDiv.style.visibility = 'visible';
-      });
-  }
+        hasRequestedCoupon = true;  // prevent new coupon fetch
+      }
+    });
+  // Create "Scratch All" button
+  const scratchAllBtn = document.createElement('button');
+  scratchAllBtn.textContent = 'Mindent megkapar';
+  scratchAllBtn.id = 'scratch-all-btn';
+  scratchAllBtn.style.marginTop = '12px';
+  scratchAllBtn.style.padding = '8px 16px';
+  scratchAllBtn.style.fontSize = '0.95rem';
+  scratchAllBtn.style.background = BTN_GRAD;
+  scratchAllBtn.style.color = '#fff';
+  scratchAllBtn.style.border = 'none';
+  scratchAllBtn.style.borderRadius = '20px';
+  scratchAllBtn.style.cursor = 'pointer';
+  scratchAllBtn.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
+  document.querySelector('.scratch-card').appendChild(scratchAllBtn);
+  scratchAllBtn.addEventListener('click', () => {
+    if (!hasRequestedCoupon) {
+      fetchCoupon();
+      hasRequestedCoupon = true;
+    }
+    spawnFullParticles();
+    canvas.style.display = 'none';
+    couponDiv.style.visibility = 'visible';
+  });
 });
 
 function checkScratchPercent() {
   const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
   let transparent = 0;
+  const total = canvas.width * canvas.height;
   for (let i = 0; i < imageData.data.length; i += 4) {
     if (imageData.data[i + 3] === 0) transparent++;
   }
-  const percent = transparent / (canvas.width * canvas.height) * 100;
-  if (percent > 50) {
+  const percent = transparent / total * 100;
+  const threshold = 50; // percent
+  if (percent > threshold) {
+    // spawn particles for all remaining (un-scratched) areas
+    spawnFullParticles();
     canvas.style.display = 'none';
+    // let existing scratch particles continue
     couponDiv.style.visibility = 'visible';
+  }
+}
+
+// Spawn particles for every unscratch area in a grid
+function spawnFullParticles() {
+  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const w = canvas.width;
+  const positions = [];
+  for (let y = 0; y < canvas.height; y += CONFIG.fullRevealGridStep) {
+    for (let x = 0; x < w; x += CONFIG.fullRevealGridStep) {
+      const alpha = imageData.data[(y * w + x) * 4 + 3];
+      if (alpha > 0) positions.push({ x, y });
+    }
+  }
+  for (let i = 0; i < Math.min(CONFIG.fullRevealMaxClusters, positions.length); i++) {
+    const pos = positions[Math.floor(Math.random() * positions.length)];
+    spawnParticles(pos.x, pos.y);
   }
 }
 
@@ -263,6 +317,22 @@ function animate() {
 }
 animate();
 
+// 3D tilt effect on card
+const scratchCardEl = document.getElementById('scratch-card');
+function handleTilt(e) {
+  const { clientX: x, clientY: y } = e;
+  const { innerWidth: w, innerHeight: h } = window;
+  // reduce tilt when scratching
+  const sensitivity = isDrawing ? 0.3 : 1;
+  const rotY = (x / w - 0.5) * 20 * sensitivity; // max ~20deg
+  const rotX = -(y / h - 0.5) * 20 * sensitivity;
+  scratchCardEl.style.transform = `perspective(600px) rotateX(${rotX}deg) rotateY(${rotY}deg)`;
+}
+document.addEventListener('mousemove', handleTilt);
+document.addEventListener('mouseleave', () => {
+  scratchCardEl.style.transform = 'perspective(600px) rotateX(0deg) rotateY(0deg)';
+});
+
 // Add button to generate new session
 const newSessionBtn = document.createElement('button');
 newSessionBtn.textContent = 'Új kupon igénylése';
@@ -280,7 +350,7 @@ newSessionBtn.style.boxShadow = '0 2px 8px rgba(0,0,0,0.10)';
 newSessionBtn.style.cursor = 'pointer';
 document.body.appendChild(newSessionBtn);
 newSessionBtn.addEventListener('click', () => {
-  localStorage.removeItem('scratch_session_id');
+  document.cookie = 'sessionId=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
   window.location.reload();
 });
 
@@ -348,7 +418,7 @@ function resizeScratchCanvases() {
   canvas.style.height = particleCanvas.style.height = '100%';
   // Redraw scratch filter
   ctx.globalCompositeOperation = 'source-over';
-  ctx.fillStyle = '#888';
+  ctx.fillStyle = SCRATCH_COLOR;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   ctx.globalCompositeOperation = 'destination-out';
 }
